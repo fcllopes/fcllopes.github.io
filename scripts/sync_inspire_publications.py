@@ -13,9 +13,10 @@ from pathlib import Path
 
 INSPIRE_AUTHOR_ID = "2939430"
 INSPIRE_QUERY = f"authors.record.$ref:{INSPIRE_AUTHOR_ID}"
-INSPIRE_AUTHOR_URL = f"https://inspirehep.net/authors/{INSPIRE_AUTHOR_ID}"
 API_BASE = "https://inspirehep.net/api/literature"
-PUBLICATIONS_DIR = Path(__file__).resolve().parent.parent / "_publications"
+ROOT = Path(__file__).resolve().parent.parent
+PUBLICATIONS_DIR = ROOT / "_publications"
+BIBTEX_DIR = ROOT / "files" / "bibtex"
 GENERATED_MARKER = "inspire-sync"
 
 
@@ -23,6 +24,17 @@ def fetch_json(url: str) -> dict:
     request = urllib.request.Request(url, headers={"Accept": "application/json"})
     with urllib.request.urlopen(request, timeout=60) as response:
         return json.load(response)
+
+
+def fetch_bibtex(control_number: str) -> str:
+    url = f"https://inspirehep.net/api/literature/{control_number}?format=bibtex"
+    request = urllib.request.Request(url, headers={"Accept": "application/x-bibtex"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return response.read().decode("utf-8").strip()
+
+
+def escape_yaml_single(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
 
 
 def strip_latex(title: str) -> str:
@@ -34,8 +46,8 @@ def strip_latex(title: str) -> str:
     return title
 
 
-def escape_yaml(value: str) -> str:
-    return value.replace("\\", "\\\\").replace('"', '\\"')
+def clean_html_title(title: str) -> str:
+    return re.sub(r"<[^>]+>", "", title).strip()
 
 
 def get_publication_date(metadata: dict) -> str:
@@ -88,14 +100,12 @@ def get_category(metadata: dict) -> str:
     for info in publication_info:
         if info.get("cnum"):
             return "conferences"
-        if info.get("journal_title"):
-            return "manuscripts"
 
-    document_type = metadata.get("document_type") or []
-    if "thesis" in document_type:
-        return "manuscripts"
+    authors = metadata.get("authors") or []
+    if len(authors) > 5:
+        return "lhcb"
 
-    return "manuscripts"
+    return "independent"
 
 
 def get_paper_url(metadata: dict, control_number: str) -> str:
@@ -122,12 +132,13 @@ def get_title(metadata: dict) -> str:
     if not titles:
         return "Untitled"
 
-    plain = next((item["title"] for item in titles if item.get("source") == "arXiv"), None)
-    if plain:
-        return plain
+    for source in ("arXiv", "Springer", "INSPIRE"):
+        match = next((item["title"] for item in titles if item.get("source") == source), None)
+        if match:
+            return clean_html_title(match)
 
     for item in titles:
-        cleaned = strip_latex(item["title"])
+        cleaned = clean_html_title(item["title"])
         if cleaned:
             return cleaned
 
@@ -142,7 +153,10 @@ def format_authors(metadata: dict) -> str:
     if len(authors) > 5:
         collaboration = metadata.get("collaborations") or []
         if collaboration:
-            return collaboration[0].get("value", "LHCb collaboration")
+            name = collaboration[0].get("value", "LHCb")
+            if name == "LHCb":
+                return "LHCb collaboration"
+            return name
         return "LHCb collaboration"
 
     names = []
@@ -157,11 +171,12 @@ def format_authors(metadata: dict) -> str:
     return " and ".join(names) if names else "Unknown authors"
 
 
-def build_citation(metadata: dict, venue: str, pub_date: str) -> str:
-    authors = html.escape(format_authors(metadata))
-    title = html.escape(get_title(metadata))
-    year = pub_date[:4]
-    return f'{authors}, &quot;{title}.&quot; <i>{html.escape(venue)}</i>, {year}.'
+def save_bibtex(control_number: str) -> str:
+    BIBTEX_DIR.mkdir(parents=True, exist_ok=True)
+    bibtex = fetch_bibtex(control_number)
+    bib_path = BIBTEX_DIR / f"{control_number}.bib"
+    bib_path.write_text(bibtex + "\n", encoding="utf-8")
+    return f"/files/bibtex/{control_number}.bib"
 
 
 def make_slug(control_number: str) -> str:
@@ -175,27 +190,25 @@ def render_markdown(metadata: dict) -> tuple[str, str]:
     venue = get_venue(metadata)
     category = get_category(metadata)
     paperurl = get_paper_url(metadata, control_number)
-    citation = build_citation(metadata, venue, pub_date)
+    authors = format_authors(metadata)
+    bibtexurl = save_bibtex(control_number)
     slug = make_slug(control_number)
     filename = f"{pub_date}-{slug}.md"
     permalink = f"/publication/{pub_date}-{slug}"
 
     content = f"""---
-title: "{escape_yaml(title)}"
+title: {escape_yaml_single(title)}
 collection: publications
 category: {category}
 permalink: {permalink}
 date: {pub_date}
-venue: '{html.escape(venue)}'
-paperurl: '{paperurl}'
-citation: '{citation}'
+venue: {escape_yaml_single(venue)}
+authors: {escape_yaml_single(authors)}
+paperurl: {escape_yaml_single(paperurl)}
+bibtexurl: {escape_yaml_single(bibtexurl)}
 inspire_id: {control_number}
 {GENERATED_MARKER}: true
 ---
-
-Publication record synced from [INSPIRE-HEP]({INSPIRE_AUTHOR_URL}).
-
-[View on INSPIRE-HEP](https://inspirehep.net/literature/{control_number}){{:target="_blank"}}
 """
     return filename, content
 

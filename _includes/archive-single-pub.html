@@ -1,0 +1,23 @@
+{% include base_path %}
+
+{% assign post = include.post %}
+{% assign title = post.title | markdownify | remove: "<p>" | remove: "</p>" %}
+
+<div class="pub-item">
+  <p class="pub-item__title">
+    <a href="{{ base_path }}{{ post.url }}" rel="permalink">{{ title }}</a>
+  </p>
+  <p class="pub-item__meta">
+    <span class="pub-item__authors"><strong>Authors:</strong> {{ post.authors }}</span>
+    · Published in <em>{{ post.venue }}</em>, {{ post.date | default: "1900-01-01" | date: "%Y" }}
+    {% if post.paperurl %}
+      <span class="pub-item__links">[<a href="{{ post.paperurl }}" target="_blank" rel="noopener">paper</a>]</span>
+    {% endif %}
+    {% if post.inspire_id %}
+      <span class="pub-item__links">[<a href="https://inspirehep.net/literature/{{ post.inspire_id }}" target="_blank" rel="noopener">INSPIRE</a>]</span>
+    {% endif %}
+    {% if post.bibtexurl %}
+      <button type="button" class="pub-item__btn bibtex-download" data-bibtex-url="{{ post.bibtexurl }}" data-bibtex-name="inspire-{{ post.inspire_id }}.bib">BibTeX</button>
+    {% endif %}
+  </p>
+</div>

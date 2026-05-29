@@ -5,26 +5,28 @@ permalink: /publications/
 author_profile: true
 ---
 
-Publications are automatically synced from my [INSPIRE-HEP author profile](https://inspirehep.net/authors/2939430).
+<p>Publications are synced from my <a href="https://inspirehep.net/authors/2939430" target="_blank" rel="noopener">INSPIRE-HEP author profile</a>.</p>
 
 {% include base_path %}
 
+<div class="pub-list">
 {% if site.publication_category %}
-  {% for category in site.publication_category  %}
+  {% for category in site.publication_category %}
     {% assign title_shown = false %}
     {% for post in site.publications reversed %}
       {% if post.category != category[0] %}
         {% continue %}
       {% endif %}
       {% unless title_shown %}
-        <h2>{{ category[1].title }}</h2><hr />
+        <h2 class="pub-list__heading">{{ category[1].title }}</h2>
         {% assign title_shown = true %}
       {% endunless %}
-      {% include archive-single.html %}
+      {% include archive-single-pub.html post=post %}
     {% endfor %}
   {% endfor %}
 {% else %}
   {% for post in site.publications reversed %}
-    {% include archive-single.html %}
+    {% include archive-single-pub.html post=post %}
   {% endfor %}
 {% endif %}
+</div>

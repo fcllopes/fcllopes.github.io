@@ -1,0 +1,16 @@
+{% if page.collection == 'publications' %}
+  <div class="pub-detail__meta">
+    <p><strong>Authors:</strong> {{ page.authors }}</p>
+    <p>Published in <em>{{ page.venue }}</em>, {{ page.date | default: "1900-01-01" | date: "%Y" }}
+      {% if page.paperurl %}
+        [<a href="{{ page.paperurl }}" target="_blank" rel="noopener">paper</a>]
+      {% endif %}
+      {% if page.inspire_id %}
+        [<a href="https://inspirehep.net/literature/{{ page.inspire_id }}" target="_blank" rel="noopener">INSPIRE</a>]
+      {% endif %}
+      {% if page.bibtexurl %}
+        <button type="button" class="pub-item__btn bibtex-download" data-bibtex-url="{{ page.bibtexurl }}" data-bibtex-name="inspire-{{ page.inspire_id }}.bib">BibTeX</button>
+      {% endif %}
+    </p>
+  </div>
+{% endif %}

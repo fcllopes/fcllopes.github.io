@@ -1,10 +1,48 @@
 <!-- start custom footer snippets -->
 
-<a href="/sitemap/">Sitemap</a>
-
-<!-- Support for MatJax -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)'], ['$', '$']],
+      displayMath: [['\\[', '\\]'], ['$$', '$$']],
+      processEscapes: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }
+  };
+</script>
 <script defer src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
+
+<script>
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('.bibtex-download');
+    if (!button) {
+      return;
+    }
+
+    var url = button.getAttribute('data-bibtex-url');
+    var filename = button.getAttribute('data-bibtex-name') || 'citation.bib';
+    if (!url) {
+      return;
+    }
+
+    fetch(url)
+      .then(function (response) { return response.text(); })
+      .then(function (text) {
+        var blob = new Blob([text], { type: 'application/x-bibtex' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      })
+      .catch(function () {
+        window.open(url, '_blank', 'noopener');
+      });
+  });
+</script>
 
 <!-- Support for Mermaid -->
 <script type="module">

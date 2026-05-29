@@ -82,8 +82,10 @@ author:
 
 # Publication Category - The following the list of publication categories and their headings
 publication_category:
-  manuscripts:
-    title: 'Journal Articles and Preprints'
+  independent:
+    title: 'Independent Works'
+  lhcb:
+    title: 'LHCb Collaboration'
   conferences:
     title: 'Conference Contributions'
 

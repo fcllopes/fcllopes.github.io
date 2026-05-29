@@ -8,5 +8,11 @@ main:
   - title: "Publications"
     url: /publications/
 
-  - title: "CV"
-    url: /cv/
+  - title: "Education"
+    url: /education/
+
+  - title: "Experience"
+    url: /experience/
+
+  - title: "Contact"
+    url: /contact/
